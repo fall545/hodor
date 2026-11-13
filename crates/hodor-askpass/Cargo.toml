@@ -1,0 +1,11 @@
+[package]
+name = "hodor-askpass"
+description = "Out-of-band secret input: pinentry first, controlling terminal as fallback"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+zeroize = { workspace = true }
+rpassword = "7"

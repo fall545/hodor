@@ -1,0 +1,1 @@
+{"name": "clean-output-passthrough", "secrets": {"openai": "sk-live-abcd1234"}, "held_secret": false, "input": "HTTP/1.1 200 OK\ncontent-length: 42", "expect": "HTTP/1.1 200 OK\ncontent-length: 42", "expect_withheld": false, "expect_replacements": 0}

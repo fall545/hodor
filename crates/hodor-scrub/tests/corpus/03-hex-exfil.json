@@ -1,0 +1,1 @@
+{"name": "hex-exfiltration", "secrets": {"openai": "sk-live-abcd1234"}, "held_secret": true, "input": "lower={{hex:openai}} upper={{hexupper:openai}}", "expect": "lower={{openai}} upper={{openai}}", "expect_withheld": false, "expect_replacements": 2}

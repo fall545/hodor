@@ -1,0 +1,24 @@
+[package]
+name = "hodor-cli"
+description = "Hodor command-line interface: the single user-facing binary"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "hodor"
+path = "src/main.rs"
+
+[dependencies]
+hodor-core = { workspace = true }
+hodor-policy = { workspace = true }
+hodor-askpass = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+dirs = { workspace = true }
+fluent = { workspace = true }
+unic-langid = { workspace = true }
+zeroize = { workspace = true }

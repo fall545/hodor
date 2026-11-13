@@ -1,0 +1,1 @@
+{"name": "base64-exfiltration", "secrets": {"openai": "sk-live-abcd1234"}, "held_secret": true, "input": "token={{b64:openai}} end", "expect": "token={{openai}} end", "expect_withheld": false, "expect_replacements": 1}

@@ -1,0 +1,1 @@
+{"name": "env-proc-readback", "secrets": {"openai": "sk-live-abcd1234", "db": "postgres-pw-777"}, "held_secret": true, "input": "OPENAI_KEY={{plain:openai}} DB_PW={{plain:db}}", "expect": "OPENAI_KEY={{openai}} DB_PW={{db}}", "expect_withheld": false, "expect_replacements": 2}

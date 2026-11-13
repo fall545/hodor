@@ -1,0 +1,41 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/hodor-core",
+    "crates/hodor-scrub",
+    "crates/hodor-policy",
+    "crates/hodor-askpass",
+    "crates/hodor-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/hodor-rs/hodor"
+
+[workspace.dependencies]
+hodor-core = { path = "crates/hodor-core" }
+hodor-scrub = { path = "crates/hodor-scrub" }
+hodor-policy = { path = "crates/hodor-policy" }
+hodor-askpass = { path = "crates/hodor-askpass" }
+
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+zeroize = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+percent-encoding = "2"
+aho-corasick = "1"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+thiserror = "2"
+toml = "0.8"
+dirs = "5"
+chrono = "0.4"
+fluent = "0.17"
+unic-langid = "0.9"
+tempfile = "3"

@@ -1,0 +1,1 @@
+{"name": "plaintext-echo", "secrets": {"openai": "sk-live-abcd1234"}, "held_secret": true, "input": "echo {{plain:openai}}", "expect": "echo {{openai}}", "expect_withheld": false, "expect_replacements": 1}

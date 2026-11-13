@@ -1,0 +1,11 @@
+[package]
+name = "hodor-policy"
+description = "Command normalization and the hard-deny / user-deny / whitelist evaluation engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+sha2 = { workspace = true }
+hex = { workspace = true }
+dirs = { workspace = true }

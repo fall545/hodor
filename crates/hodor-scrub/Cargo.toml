@@ -1,0 +1,17 @@
+[package]
+name = "hodor-scrub"
+description = "Secret substitution engine: multi-encoding detection used for both output scrubbing and file-read proxying"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aho-corasick = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+percent-encoding = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

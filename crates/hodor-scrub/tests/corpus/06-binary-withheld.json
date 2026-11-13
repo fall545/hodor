@@ -1,0 +1,1 @@
+{"name": "binary-output-withheld", "secrets": {"openai": "sk-live-abcd1234"}, "held_secret": true, "input_b64": "AAEC//4=", "expect_withheld": true, "expect_replacements": 0}

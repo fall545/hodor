@@ -1,0 +1,1 @@
+{"name": "high-entropy-text-withheld", "secrets": {"openai": "sk-live-abcd1234"}, "held_secret": true, "input": "q8Xz2Kp9RtVnB4mYc7LwE5sH3jD6fG1aU0iO2zN8xC4vM5bQ7wE9rT2yU3iO1pA6sD4fG7h", "expect_withheld": true, "expect_replacements": 0}
