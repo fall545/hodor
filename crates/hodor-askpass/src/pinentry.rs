@@ -7,10 +7,27 @@
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::sync::mpsc::{self, Receiver};
+use std::time::Duration;
 
 use crate::AskError;
 
+/// GUI-capable candidates, in preference order.
 const CANDIDATE_NAMES: [&str; 3] = ["pinentry", "pinentry-curses", "pinentry-tty"];
+/// Headless candidates: only pinentry variants that prompt on the user's
+/// terminal. GUI pinentry (gnome3/qt/...) cannot show a dialog without a
+/// display and would just hang until the timeout; pinentry-curses needs a
+/// tty on stdin, which we cannot give it (we speak assuan on pipes), so it
+/// errors out — skip both and fall straight back to our own TTY input.
+const HEADLESS_CANDIDATE_NAMES: [&str; 1] = ["pinentry-tty"];
+
+/// Startup handshake should be near-instant; anything longer means the
+/// pinentry cannot run here (dead display, missing socket, ...).
+const GREETING_TIMEOUT: Duration = Duration::from_secs(5);
+/// The user gets two minutes to find and answer the dialog; after that we
+/// give up on pinentry and fall back to the terminal instead of hanging
+/// forever on a window hidden behind others.
+const DIALOG_TIMEOUT: Duration = Duration::from_secs(120);
 
 pub struct Pinentry {
     binary: PathBuf,
@@ -30,9 +47,19 @@ pub fn discover(configured: Option<&str>) -> Option<Pinentry> {
             });
         }
     }
-    CANDIDATE_NAMES
+    let candidates: &[&str] = match headless() {
+        true => &HEADLESS_CANDIDATE_NAMES,
+        false => &CANDIDATE_NAMES,
+    };
+    candidates
         .iter()
         .find_map(|name| which(name).map(|binary| Pinentry { binary }))
+}
+
+/// True when no graphical display is reachable: a bare SSH session, a
+/// console login, or a server. Both Wayland and X11 set one of these.
+fn headless() -> bool {
+    std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none()
 }
 
 fn which(name: &str) -> Option<PathBuf> {
@@ -58,7 +85,9 @@ impl Pinentry {
 struct ChildHandle {
     child: Child,
     stdin: ChildStdin,
-    stdout: BufReader<ChildStdout>,
+    /// Lines produced by the reader thread; reads must never block the
+    /// caller indefinitely.
+    lines: Receiver<std::io::Result<String>>,
 }
 
 impl ChildHandle {
@@ -76,26 +105,28 @@ impl ChildHandle {
             .stdout
             .take()
             .ok_or_else(|| AskError::Protocol("no stdout".into()))?;
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || read_lines(stdout, tx));
         let mut handle = Self {
             child,
             stdin,
-            stdout: BufReader::new(stdout),
+            lines: rx,
         };
-        handle.read_ok()?;
+        handle.read_ok(GREETING_TIMEOUT)?;
         Ok(handle)
     }
 
     fn set(&mut self, command: &str, value: &str) -> Result<(), AskError> {
         let value = value.replace(['\r', '\n'], " ");
         writeln!(self.stdin, "{command} {value}")?;
-        self.read_ok()
+        self.read_ok(DIALOG_TIMEOUT)
     }
 
     fn getpin(&mut self) -> crate::AskResult {
         writeln!(self.stdin, "GETPIN")?;
-        let line = self.read_line()?;
+        let line = self.read_line(DIALOG_TIMEOUT)?;
         if let Some(pin) = line.strip_prefix("D ") {
-            self.read_ok()?;
+            self.read_ok(DIALOG_TIMEOUT)?;
             return Ok(Some(zeroize(pin)));
         }
         // ERR lines mean "canceled" or "not confirmed" — the user declined.
@@ -107,18 +138,53 @@ impl ChildHandle {
         let _ = self.child.wait();
     }
 
-    fn read_ok(&mut self) -> Result<(), AskError> {
-        let line = self.read_line()?;
+    fn read_ok(&mut self, timeout: Duration) -> Result<(), AskError> {
+        let line = self.read_line(timeout)?;
         match line.starts_with("OK") {
             true => Ok(()),
             false => Err(AskError::Protocol(format!("expected OK, got: {line}"))),
         }
     }
 
-    fn read_line(&mut self) -> Result<String, AskError> {
+    fn read_line(&mut self, timeout: Duration) -> Result<String, AskError> {
+        match self.lines.recv_timeout(timeout) {
+            Ok(Ok(line)) => Ok(line.trim_end().to_string()),
+            Ok(Err(e)) => Err(AskError::Io(e)),
+            // Timeout or a dead reader thread (pinentry exited, display
+            // gone, dialog never answered): signal failure so the caller
+            // falls back to the terminal instead of hanging forever.
+            Err(_) => Err(AskError::Protocol(
+                "pinentry did not answer in time".into(),
+            )),
+        }
+    }
+}
+
+impl Drop for ChildHandle {
+    fn drop(&mut self) {
+        // A timed-out pinentry may still be alive (its dialog orphaned);
+        // never leave the process behind.
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
+fn read_lines(stdout: ChildStdout, tx: mpsc::Sender<std::io::Result<String>>) {
+    let mut reader = BufReader::new(stdout);
+    loop {
         let mut line = String::new();
-        self.stdout.read_line(&mut line)?;
-        Ok(line.trim_end().to_string())
+        let result = reader.read_line(&mut line).map(|n| {
+            // EOF: report once so the caller stops waiting, then exit.
+            if n == 0 { None } else { Some(line) }
+        });
+        let (result, done) = match result {
+            Ok(Some(line)) => (Ok(line), false),
+            Ok(None) => (Ok(String::new()), true),
+            Err(e) => (Err(e), true),
+        };
+        if tx.send(result).is_err() || done {
+            return;
+        }
     }
 }
 

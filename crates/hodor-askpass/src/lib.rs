@@ -44,11 +44,15 @@ impl AskPass {
     pub fn ask(&self, prompt: &str) -> AskResult {
         let desc = self.decorate(prompt);
         if let Some(entry) = &self.pinentry {
+            // The dialog may open unfocused or behind other windows; tell
+            // the user where the input is expected so it can't look like
+            // a hang.
+            eprintln!("(waiting for the Hodor passphrase dialog — press Esc to type on the terminal instead)");
             match entry.ask(&desc) {
                 Ok(Some(pin)) => return Ok(Some(pin)),
                 Ok(None) => return Ok(None),
                 Err(_) => {
-                    // pinentry unusable here; try the controlling terminal.
+                    eprintln!("(pinentry unavailable — falling back to terminal input)");
                 }
             }
         }

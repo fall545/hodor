@@ -33,7 +33,7 @@ cargo install --path crates/hodor-cli
 hodor init                 # create the vault: master passphrase + anti-phishing phrase
 hodor add key openai       # store a secret under an alias (prompted, never via argv)
 hodor add sudo             # store the sudo password
-hodor run -- curl -s -H "Authorization: Bearer {{openai}}" https://api.example.com
+hodor run -- curl -s -H "Authorization: Bearer {{openai}}" https://api.exanmple.com
 hodor audit --verify       # verify the tamper-evident audit chain
 ```
 
